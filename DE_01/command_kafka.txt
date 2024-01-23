@@ -19,20 +19,24 @@ Open another window to start kafka
 But first ssh to to your ec2 machine as done above
 
 
-Start Kafka-server:
-----------------------------------------
-Duplicate the session & enter in a new console --
-
+Assign Memory To Kafka Server
+-------------------------------
 Assign Some Memory to kafka server (as we are running on a single EC2 Instance).
 => export KAFKA_HEAP_OPTS="-Xmx256M -Xms128M"
 
+
+Start Kafka-server:
+----------------------------------------
+Duplicate the session & enter in a new console --
 
 Now Run kafka Server.
 cd kafka_2.12-3.3.1
 bin/kafka-server-start.sh config/server.properties
 
+
+
 {
-    Problem Encountered:
+    Problem Encountered - 01:
         Stating the Kafka server in EC2, will only be able to connect in private VPC,
         as the EC2 on which kafka is running is connected via -SSH with Private DNS name.
         So, access to kafka is not possible from remote over IPV4 network.
@@ -43,6 +47,21 @@ bin/kafka-server-start.sh config/server.properties
         To do this , you can follow any of the 2 approaches shared belwo --
         Do a "sudo nano config/server.properties" - change ADVERTISED_LISTENERS to public ip of the EC2 instance
 
+    Problem Encountered - 02 [Bind Error]:
+        That's typical a port conflict issue "Socket server failed to bind to 0.0.0.0:9092:Address already inuse" 
+        Kafka listens on TCP port 9092 so this means there is already a process running on port 9092 change 
+        the port KafkaServer id=0 to something like 9093 or get the PID running on the port 
+        and kill it then restart kafka.
+
+    Mitigations:
+       1. # lsof -n -i :9092 | grep LISTEN
+            -> The PID should be the second column entry eg 7812 below
+                -> java 7812 root 205u IPv6 60200 0t0 TCP *:webcache (LISTEN).
+        
+        Now kill the process
+            -> # kill -9 7812
+        
+       2.  OR Simply open a new terminal for Kafka Server only & start all over again.
 
 }
 
@@ -52,14 +71,14 @@ Create the topic:
 -----------------------------
 Duplicate the session & enter in a new console --
 cd kafka_2.12-3.3.1
-bin/kafka-topics.sh --create --topic demo_topic_de-02 --bootstrap-server 3.110.132.110:9092 --replication-factor 1 --partitions 1
+bin/kafka-topics.sh --create --topic kfk_demo_topic_01 --bootstrap-server 13.233.165.210:9092 --replication-factor 1 --partitions 1
 
 Start Producer:
 --------------------------
-bin/kafka-console-producer.sh --topic demo_topic_de-02 --bootstrap-server 3.110.132.110:9092 
+bin/kafka-console-producer.sh --topic kfk_demo_topic_01 --bootstrap-server 13.233.165.210:9092
 
 Start Consumer:
 -------------------------
 Duplicate the session & enter in a new console --
 cd kafka_2.12-3.3.1
-bin/kafka-console-consumer.sh --topic demo_topic_de-02 --bootstrap-server 3.110.132.110:9092 
+bin/kafka-console-consumer.sh --topic kfk_demo_topic_01 --bootstrap-server 13.233.165.210:9092
