@@ -1,0 +1,67 @@
+service: s3lambda
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: python3.9
+  region: ${opt:region, 'ap-south-1'}
+  environment:
+    STAGE: ${opt:stage, 'dev'}
+
+resources:
+  Resources:
+    test:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Sub ${AWS::StackName}-test-${AWS::AccountId}
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: aws:kms
+                KMSMasterKeyID: alias/aws/s3
+        PublicAccessBlockConfiguration:
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+    testBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref test
+        PolicyDocument:
+          Id: RequireEncryptionInTransit
+          Version: '2012-10-17'
+          Statement:
+            - Principal: '*'
+              Action: '*'
+              Effect: Deny
+              Resource:
+                - !GetAtt test.Arn
+                - !Sub ${test.Arn}/*
+              Condition:
+                Bool:
+                  aws:SecureTransport: 'false'
+    testlambda:
+      Type: AWS::Serverless::Function
+      Properties:
+        Description: !Sub
+          - Stack ${AWS::StackName} Function ${ResourceName}
+          - ResourceName: testlambda
+        CodeUri: s3://authsvcbucket-01/s3lambda.zip
+
+        Handler: handler.handler
+        Runtime: python3.9
+        MemorySize: 3008
+        Timeout: 30
+        Tracing: Active
+        Events:
+          test:
+            Type: S3
+            Properties:
+              Bucket: !Ref test
+              Events:
+                - s3:ObjectCreated:*
+                - s3:ObjectRemoved:*
+    testlambdaLogGroup:
+      Type: AWS::Logs::LogGroup
+      DeletionPolicy: Retain
+      Properties:
+        LogGroupName: !Sub /aws/lambda/${testlambda}
+  Transform: AWS::Serverless-2016-10-31

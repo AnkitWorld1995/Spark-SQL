@@ -1,0 +1,13 @@
+service: lambdaServerless
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  stage: UAT
+  region: ap-south-1
+
+functions:
+  hello:
+    handler: handler.hello

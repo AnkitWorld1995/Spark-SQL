@@ -1,0 +1,44 @@
+service: lambdaServerless-Cron
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: python3.9
+  region: ${opt:region, 'ap-south-1'}
+  environment:
+    STAGE: ${opt:stage, 'dev'}
+functions:
+  cronHandler:
+    handler: handler.run
+    memorySize: 3008
+    timeout: 10
+    tracing: Active
+    
+    events:
+      - schedule: cron(0/2 * ? * MON-SAT *)
+      - s3:
+          bucket: !Ref mytestbucket
+          event: s3:ObjectCreated:*
+
+resources:
+  Resources:
+    mytestbucket:
+      Type: AWS::S3::Bucket
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref mytestbucket 
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Principal: '*'
+              Action: '*'
+              Effect: Deny
+              Resource:
+                - !GetAtt mytestbucket.Arn
+                - !Sub ${mytestbucket.Arn}/*
+              Condition:
+                Bool:
+                  aws:SecureTransport: 'false'
+          
+
+            
