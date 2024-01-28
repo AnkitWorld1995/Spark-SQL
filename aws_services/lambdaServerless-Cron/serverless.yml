@@ -15,30 +15,9 @@ functions:
     
     events:
       - schedule: cron(0/2 * ? * MON-SAT *)
-      - s3:
-          bucket: !Ref mytestbucket
-          event: s3:ObjectCreated:*
 
-resources:
-  Resources:
-    mytestbucket:
-      Type: AWS::S3::Bucket
-    BucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: !Ref mytestbucket 
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Principal: '*'
-              Action: '*'
-              Effect: Deny
-              Resource:
-                - !GetAtt mytestbucket.Arn
-                - !Sub ${mytestbucket.Arn}/*
-              Condition:
-                Bool:
-                  aws:SecureTransport: 'false'
+
+
           
 
             
